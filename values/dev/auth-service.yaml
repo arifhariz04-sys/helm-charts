@@ -1,0 +1,22 @@
+replicaCount: 1
+
+image:
+  repository: 123456789012.dkr.ecr.ap-southeast-1.amazonaws.com/auth-service
+
+service:
+  targetPort: 8080
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: auth-dev.domainkamu.com
+      paths:
+        - path: /
+          pathType: Prefix
+
+env:
+  APP_ENV: dev
+  DB_HOST: postgres.dev.svc.cluster.local
+  DB_PORT: "5432"
+  DB_NAME: auth_db

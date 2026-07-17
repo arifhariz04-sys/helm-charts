@@ -1,0 +1,17 @@
+replicaCount: 2
+image:
+  repository: 123456789012.dkr.ecr.ap-southeast-1.amazonaws.com/api-gateway
+service:
+  targetPort: 8080
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: api-dev.domainkamu.com
+      paths:
+        - path: /
+          pathType: Prefix
+env:
+  APP_ENV: dev
+  AUTH_SERVICE_URL: http://auth-service.dev.svc.cluster.local
+  TRANSACTION_SERVICE_URL: http://transaction-service.dev.svc.cluster.local
