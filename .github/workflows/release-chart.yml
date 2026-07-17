@@ -1,0 +1,52 @@
+name: Release Helm chart to ECR
+
+on:
+  push:
+    branches: [main]
+    paths: ["charts/**"] # Hanya jalan jika ada perubahan di folder charts
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Checkout repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Setup Konfigurasi AWS Credentials
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-southeast-1
+
+      # 3. Setup Helm CLI
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      # 4. Login ke Registry Helm ECR
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password --region ap-southeast-1 | helm registry login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-southeast-1.amazonaws.com
+
+      # 5. Linting / Validasi Chart
+      - name: Helm Lint
+        run: helm lint charts/app
+
+      # 6. Package dan Push Chart ke ECR
+      - name: Package and Push Helm Chart
+        run: |
+          # Package chart menjadi file .tgz
+          helm package charts/app -d .
+          
+          # Ambil nama file tgz yang baru saja dibuat
+          PACKAGE_FILE=$(ls app-*.tgz)
+          
+          # Push OCI artifact ke ECR (pastikan repo ECR helm/app sudah dibuat di Bab 6.2)
+          helm push $PACKAGE_FILE oci://${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-southeast-1.amazonaws.com/helm
